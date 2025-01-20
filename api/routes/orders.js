@@ -7,6 +7,7 @@ router.get('/',(req, res, next)=>{
   });
 });
 
+// handling incoming post requests 
 router.post('/',(req, res, next)=>{
   res.status(201).json({
     message: 'Orders were created'
