@@ -1,37 +1,39 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const multer = require('multer');
+const multer = require("multer");
+const checkAuth = require("../middleware/check-auth");
 
 const storage = multer.diskStorage({
-  destination:function(req,file,cb){
-cb(null, './uploads/');
+  destination: function (req, file, cb) {
+    cb(null, "./uploads/");
   },
-  filename: function(req,file,cb){
-cb(
-  null,
-  new Date().toISOString().replace(/:/g, '-') + '-' + file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9.-]/g, '')
-);
-  }
-})
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      new Date().toISOString().replace(/:/g, "-") +
+        "-" +
+        file.originalname.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9.-]/g, "")
+    );
+  },
+});
 
-const fileFilter = (req, file, cb)=>{
+const fileFilter = (req, file, cb) => {
   //reject a file
-  if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
     cb(null, true);
-  }
-  else{
+  } else {
     cb(null, false);
   }
- 
-}
+};
 
-const upload = multer({storage: storage,
+const upload = multer({
+  storage: storage,
   limits: {
-    fileSize: 1024 *1024 *5
+    fileSize: 1024 * 1024 * 5,
   },
-  fileFilter: fileFilter
-})
+  fileFilter: fileFilter,
+});
 
 const Product = require("../models/product");
 
@@ -46,7 +48,7 @@ router.get("/", (req, res, next) => {
           return {
             name: doc.name,
             price: doc.price,
-            productImage:doc.productImage,
+            productImage: doc.productImage,
             _id: doc._id,
             request: {
               type: "GET",
@@ -71,13 +73,13 @@ router.get("/", (req, res, next) => {
     });
 });
 
-router.post("/",upload.single('productImage'), (req, res, next) => {
+router.post("/", checkAuth,  upload.single("productImage"),  (req, res, next) => {
   console.log(req.file);
-    const product = new Product({
+  const product = new Product({
     _id: new mongoose.Types.ObjectId(),
     name: req.body.name,
     price: req.body.price,
-    productImage:req.file.path
+    productImage: req.file.path,
   });
   product
     .save()
@@ -104,10 +106,10 @@ router.post("/",upload.single('productImage'), (req, res, next) => {
     });
 });
 
-router.get("/:productId", (req, res, next) => {
+router.get("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   Product.findById(id)
-  .select('name price _id productImage')
+    .select("name price _id productImage")
     .exec()
     .then((doc) => {
       console.log(doc);
@@ -115,11 +117,10 @@ router.get("/:productId", (req, res, next) => {
         res.status(200).json({
           message: "From database",
           data: doc,
-            request: {
-              type: "GET",
-              url: "http://localhost:4000/products/" + doc._id,
-            },
-          
+          request: {
+            type: "GET",
+            url: "http://localhost:4000/products/" + doc._id,
+          },
         });
       } else {
         res
@@ -133,7 +134,7 @@ router.get("/:productId", (req, res, next) => {
     });
 });
 
-router.patch("/:productId", (req, res, next) => {
+router.patch("/:productId",checkAuth, (req, res, next) => {
   const id = req.params.productId;
   const updateOps = {};
   for (const ops of req.body) {
@@ -144,12 +145,11 @@ router.patch("/:productId", (req, res, next) => {
     .then((result) => {
       console.log(res);
       res.status(200).json({
-        message: 'Product updated',
+        message: "Product updated",
         request: {
-              type: "GET",
-              url: "http://localhost:4000/products/" +id,
-            },
-
+          type: "GET",
+          url: "http://localhost:4000/products/" + id,
+        },
       });
     })
     .catch((err) => {
@@ -158,18 +158,18 @@ router.patch("/:productId", (req, res, next) => {
     });
 });
 
-router.delete("/:productId", (req, res, next) => {
+router.delete("/:productId",checkAuth, (req, res, next) => {
   const id = req.params.productId;
   Product.deleteOne({ _id: id })
     .exec()
     .then((result) => {
       res.status(200).json({
-        message:"Product deleted",
+        message: "Product deleted",
         request: {
-          type: 'POST',
-          url:'http://localhost:4000/products',
-          body:{name:'String', price:'Number'}
-        }
+          type: "POST",
+          url: "http://localhost:4000/products",
+          body: { name: "String", price: "Number" },
+        },
       });
     })
     .catch((err) => {
